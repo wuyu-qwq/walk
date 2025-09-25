@@ -248,6 +248,44 @@ func (cb *ComboBox) Editable() bool {
 	return !cb.hasStyleBits(win.CBS_DROPDOWNLIST)
 }
 
+func (cb *ComboBox) SetEditable(editable bool) error {
+	var style uint32
+	if editable {
+		style = win.CBS_AUTOHSCROLL | win.CBS_DROPDOWN
+	} else {
+		style = win.CBS_DROPDOWNLIST
+	}
+
+	oldEditable := cb.Editable()
+	if oldEditable == editable {
+		return nil
+	}
+
+	parent := cb.Parent()
+	if parent == nil {
+		return newError("ComboBox has no parent")
+	}
+
+	model := cb.Model()
+
+	cb.Dispose()
+
+	newCb, err := newComboBoxWithStyle(parent, style)
+	if err != nil {
+		return err
+	}
+
+	if model != nil {
+		if err := newCb.SetModel(model); err != nil {
+			return err
+		}
+	}
+
+	*cb = *newCb
+
+	return nil
+}
+
 func (cb *ComboBox) itemString(index int) string {
 	switch val := cb.model.Value(index).(type) {
 	case string:
